@@ -55,8 +55,10 @@ public class Main {
          }
          String[] endpointTokens = endpoint.split("/");
          if(endpointTokens[1].equalsIgnoreCase("echo")){
-             String output = String.format("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",endpointTokens[2].length(),endpointTokens[2]);
-             clientSocket.getOutputStream().write(output.getBytes());
+             System.out.println("Here");
+             String output1 = String.format("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",endpointTokens[2].length(),endpointTokens[2]);
+             System.out.println(output1);
+             clientSocket.getOutputStream().write(output1.getBytes());
          }else{
              clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
          }
