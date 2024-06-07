@@ -13,6 +13,7 @@ public class Main {
         // You can use print statements as follows for debugging, they'll be visible
         // when running tests.
         System.out.println("Logs from your program will appear here!");
+        System.out.println(args[0]);
         ExecutorService executor = Executors.newFixedThreadPool(10);
         // Uncomment this block to pass the first stage
         try{
