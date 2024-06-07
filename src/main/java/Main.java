@@ -24,6 +24,17 @@ public class Main {
          InputStream inputStream = clientSocket.getInputStream();
          BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
          String firstLine = reader.readLine();
+         String line;
+         String userAgent = null;
+         while((line = reader.readLine())!=null){
+             if(line.startsWith("User-Agent:")){
+                 String[] userAgentTokens = line.split(":");
+                 userAgent = userAgentTokens[1];
+                 System.out.println(userAgent);
+                 break;
+             }
+         }
+
          if(firstLine==null || firstLine.isEmpty()){
              clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
              return;
@@ -31,6 +42,13 @@ public class Main {
          String[] tokens = firstLine.split(" ");
          String endpoint = tokens[1];
          System.out.println(endpoint);
+         if(endpoint.equalsIgnoreCase("/user-agent")){
+             if(userAgent!=null){
+                 String output = String.format("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",userAgent.trim().length(),userAgent.trim());
+                 clientSocket.getOutputStream().write(output.getBytes());
+                 return;
+             }
+         }
          if(endpoint.equalsIgnoreCase("/")){
              clientSocket.getOutputStream().write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
              return;
