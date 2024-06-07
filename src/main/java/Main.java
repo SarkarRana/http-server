@@ -24,14 +24,25 @@ public class Main {
          InputStream inputStream = clientSocket.getInputStream();
          BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
          String firstLine = reader.readLine();
+         if(firstLine==null || firstLine.isEmpty()){
+             clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
+             return;
+         }
          String[] tokens = firstLine.split(" ");
          String endpoint = tokens[1];
          System.out.println(endpoint);
-         if(!endpoint.equalsIgnoreCase("/")){
-             clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
-         }else{
+         if(endpoint.equalsIgnoreCase("/")){
              clientSocket.getOutputStream().write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
+             return;
          }
+         String[] endpointTokens = endpoint.split("/");
+         if(endpointTokens[1].equalsIgnoreCase("echo")){
+             String output = String.format("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",endpointTokens[2].length(),endpointTokens[2]);
+             clientSocket.getOutputStream().write(output.getBytes());
+         }else{
+             clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
+         }
+
        System.out.println("accepted new connection");
      } catch (IOException e) {
        System.out.println("IOException: " + e.getMessage());
