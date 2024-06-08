@@ -1,12 +1,19 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
 
 public class HttpService implements Runnable{
     private Socket clientSocket;
+    private String basePath;
 
     public HttpService(Socket clientSocket) {
         this.clientSocket = clientSocket;
+    }
+
+    public HttpService(Socket clientSocket, String basePath) {
+        this.clientSocket = clientSocket;
+        this.basePath = basePath;
     }
 
     @Override
@@ -46,7 +53,24 @@ public class HttpService implements Runnable{
                         + "Content-Length: " + responsebody.length() +
                         "\r\n\r\n" + responsebody;
                 output.write(finalstr.getBytes());
-            } else {
+            } else if ((str.length > 2 && str[1].equals("files"))) {
+                String filePath = basePath+str[2];
+                File file = new File(filePath);
+                if(file.exists()){
+                    String body = Files.readString(file.toPath());
+
+                    System.out.println("body:: "+body);
+                    String finalstr = "HTTP/1.1 200 OK\r\n"
+                            + "Content-Type: application/octet-stream\r\n"
+                            + "Content-Length: " + body.length() +
+                            "\r\n\r\n" + body;
+                    output.write(finalstr.getBytes());
+                }else{
+                    output.write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
+                }
+
+
+            }else {
                 output.write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
             }
             output.flush();
