@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.zip.GZIPOutputStream;
 
 public class HttpService implements Runnable{
     private Socket clientSocket;
@@ -78,13 +79,18 @@ public class HttpService implements Runnable{
                 System.out.println("Here1:::::");
 
                 String responsebody = str[2];
+                byte[] responseBytes = responsebody.getBytes("UTF-8");
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                try(GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)){
+                    gzipOutputStream.write(responseBytes);
+                }
                 String finalstr = "";
                 if(encoding.contains("gzip")){
                     finalstr = "HTTP/1.1 200 OK\r\n"
                             + "Content-Type: text/plain\r\n"
-                            + "Content-Length: " + responsebody.length()
+                            + "Content-Length: " + byteArrayOutputStream.toByteArray().length
                             + "\r\nContent-Encoding: gzip"+
-                            "\r\n\r\n" + responsebody;
+                            "\r\n\r\n";
                 }else{
                     finalstr = "HTTP/1.1 200 OK\r\n"
                             + "Content-Type: text/plain\r\n"
@@ -94,6 +100,7 @@ public class HttpService implements Runnable{
                 }
 
                 output.write(finalstr.getBytes());
+                output.write(byteArrayOutputStream.toByteArray());
             } else if (HttpRequest[0].equalsIgnoreCase("GET") && (str.length > 2 && str[1].equals("files"))) {
                 System.out.println("Here1:::::");
 
