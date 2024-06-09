@@ -2,6 +2,9 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 public class HttpService implements Runnable{
     private Socket clientSocket;
@@ -19,24 +22,35 @@ public class HttpService implements Runnable{
     @Override
     public void run() {
         try {
-            InputStream input = clientSocket.getInputStream();
+        InputStream input = clientSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-            String line = reader.readLine();
-            OutputStream output = clientSocket.getOutputStream();
+        String line = null;
 
+            line = reader.readLine();
+
+        OutputStream output = clientSocket.getOutputStream();
+            System.out.println(line);
             if(line==null){
                 output.write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
                 return;
             }
             String[] HttpRequest = line.split(" ");
             System.out.println(String.join(",",HttpRequest));
-            String headerLine;
-            StringBuffer headers = new StringBuffer();
+            String headerLine=null;
+            int contentLength = 0;
+            String userAgent = "";
             while((headerLine= reader.readLine())!=null && !headerLine.isEmpty()){
-                headers.append(headerLine);
+                System.out.println(headerLine);
+                if (headerLine.startsWith("Content-Length:")) {
+                    contentLength = Integer.parseInt(headerLine.substring("Content-Length:".length()).trim());
+                    System.out.println("contentlength:: "+contentLength);
+                }else if(headerLine.startsWith("User-Agent:")){
+                    System.out.println("Collected");
+                    userAgent = headerLine.substring("User-Agent:".length()).trim();
+                }
             }
-            String requestBody = reader.readLine();
-            System.out.println("body:: "+requestBody);
+            System.out.println("outside");
+
 
 
             String[] str = HttpRequest[1].split("/");
@@ -50,13 +64,12 @@ public class HttpService implements Runnable{
                         + "Content-Length: 0\r\n\r\n";
                 output.write(response.getBytes());
             } else if (str[1].equals("user-agent")) {
-                System.out.println("Here1:::::");
+                System.out.println("user agent:::::"+userAgent);
 
-                reader.readLine();
-                String useragent = reader.readLine().split("\\s+")[1];
+
                 String reply = String.format(
-                        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %s\r\n\r\n%s\r\n",
-                        useragent.length(), useragent);
+                        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n",
+                        userAgent.length(), userAgent);
                 output.write(reply.getBytes());
             } else if ((str.length > 2 && str[1].equals("echo"))) {
                 System.out.println("Here1:::::");
@@ -90,20 +103,42 @@ public class HttpService implements Runnable{
             }else if(HttpRequest[0].startsWith("POST") && (str.length > 2 && str[1].equals("files"))){
                 System.out.println("Here:::::");
                 String fileName = str[2];
+                StringBuffer bodyBuffer = new StringBuffer();
+                while (reader.ready()) {
+                    bodyBuffer.append((char)reader.read());
+                }
+                String requestBody = bodyBuffer.toString();
+//                char[] body = new char[contentLength];
+//                reader.read(body, 0, contentLength);
+//                String requestBody = new String(body);
+                System.out.println("body:: "+requestBody);
                 try {
-                    String fullFilePath = basePath + fileName + ".txt";
+                    String fullFilePath = basePath + fileName;
+                    Path path = Paths.get(fullFilePath);
                     System.out.println("Filename " + fullFilePath);
-                    File outputFile = new File(basePath,fileName);
-                    if (outputFile.exists()) {
-                        String finalstr = "HTTP/1.1 201 Created\r\n" + "Content-Type: application/octet-stream\r\n"
-                                + "Content-Length: " + requestBody.length() +
-                                "\r\n\r\n" + requestBody;
-                        System.out.println("finalstring:: " + finalstr);
+
+                    try{
+
+                        Files.createDirectories(path.getParent());
+                        if (!Files.exists(path)) {
+                            Files.createFile(path);
+                        }
+                        Files.write(path, requestBody.getBytes());
+                        String finalstr = "HTTP/1.1 201 Created\r\n"
+                                + "Content-Type: application/octet-stream\r\n"
+                                + "Content-Length: " + "requestBody".length() +
+                                "\r\n\r\n" + "requestBody";
                         output.write(finalstr.getBytes());
-                        System.out.println("output sent");
+                    }catch (Exception ex){
+                        System.out.println("here"+ Arrays.toString(ex.getStackTrace()));
                     }
 
 
+
+                    System.out.println("Not Sent");
+
+                    output.write(
+                            "HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
 
                 }catch (Exception ex){
                     System.out.println("Exception occurred:: "+ex.getMessage());
@@ -113,8 +148,8 @@ public class HttpService implements Runnable{
             }
             output.flush();
             System.out.println("accepted new connection");
-        } catch (IOException e) {
-            System.out.println("IOException: " + e.getMessage());
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 }
