@@ -79,7 +79,7 @@ public class HttpService implements Runnable{
 
                 String responsebody = str[2];
                 String finalstr = "";
-                if(!encoding.contains("gzip")){
+                if(encoding.contains("gzip")){
                     finalstr = "HTTP/1.1 200 OK\r\n"
                             + "Content-Type: text/plain\r\n"
                             + "Content-Length: " + responsebody.length()
