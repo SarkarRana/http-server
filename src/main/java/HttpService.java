@@ -39,6 +39,7 @@ public class HttpService implements Runnable{
             String headerLine=null;
             int contentLength = 0;
             String userAgent = "";
+            String encoding = "";
             while((headerLine= reader.readLine())!=null && !headerLine.isEmpty()){
                 System.out.println(headerLine);
                 if (headerLine.startsWith("Content-Length:")) {
@@ -47,6 +48,8 @@ public class HttpService implements Runnable{
                 }else if(headerLine.startsWith("User-Agent:")){
                     System.out.println("Collected");
                     userAgent = headerLine.substring("User-Agent:".length()).trim();
+                }else if(headerLine.startsWith("Accept-Encoding:")){
+                    encoding = headerLine.substring("Accept-Encoding:".length()).trim();
                 }
             }
             System.out.println("outside");
@@ -75,10 +78,21 @@ public class HttpService implements Runnable{
                 System.out.println("Here1:::::");
 
                 String responsebody = str[2];
-                String finalstr = "HTTP/1.1 200 OK\r\n"
-                        + "Content-Type: text/plain\r\n"
-                        + "Content-Length: " + responsebody.length() +
-                        "\r\n\r\n" + responsebody;
+                String finalstr = "";
+                if(!encoding.equalsIgnoreCase("invalid-encoding")){
+                    finalstr = "HTTP/1.1 200 OK\r\n"
+                            + "Content-Type: text/plain\r\n"
+                            + "Content-Length: " + responsebody.length()
+                            + "\r\nContent-Encoding: gzip"+
+                            "\r\n\r\n" + responsebody;
+                }else{
+                    finalstr = "HTTP/1.1 200 OK\r\n"
+                            + "Content-Type: text/plain\r\n"
+                            + "Content-Length: " + responsebody.length()
+                            + "\r\n\r\n" + responsebody;
+
+                }
+
                 output.write(finalstr.getBytes());
             } else if (HttpRequest[0].equalsIgnoreCase("GET") && (str.length > 2 && str[1].equals("files"))) {
                 System.out.println("Here1:::::");
